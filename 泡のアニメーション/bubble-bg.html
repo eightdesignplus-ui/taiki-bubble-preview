@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>泡アニメーション背景テスト</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #ffffff;
+      min-height: 100vh;
+    }
+
+    #bubble-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    /* SWELLのコンテンツを泡より前面に */
+    #wrapper,
+    .l-header,
+    .l-main,
+    .l-footer,
+    .p-header {
+      position: relative;
+      z-index: 1;
+    }
+
+    .bubble {
+      position: absolute;
+      bottom: -80px;
+      border-radius: 50%;
+      background: transparent;
+      animation: bubbleFloatUp ease-in-out infinite,
+                 bubbleSway    ease-in-out infinite;
+      opacity: 0;
+    }
+
+    @keyframes bubbleFloatUp {
+      0%   { bottom: -80px; opacity: 0; }
+      8%   { opacity: 1; }
+      88%  { opacity: 0.5; }
+      100% { bottom: 110%; opacity: 0; }
+    }
+
+    @keyframes bubbleSway {
+      0%   { margin-left: 0px; }
+      25%  { margin-left: var(--sway-a); }
+      50%  { margin-left: 0px; }
+      75%  { margin-left: var(--sway-b); }
+      100% { margin-left: 0px; }
+    }
+
+    /* ↓ 確認用のダミーコンテンツ（本番では削除してください） */
+    .demo-content {
+      position: relative;
+      z-index: 1;
+      padding: 60px 40px;
+      text-align: center;
+      color: #666;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 泡の描画エリア -->
+  <div id="bubble-canvas"></div>
+
+  <!-- ↓ 確認用ダミーコンテンツ（本番では削除） -->
+  <div class="demo-content">
+    <h1>泡アニメーション背景テスト</h1>
+    <p>コンテンツはここに入ります</p>
+  </div>
+
+  <script>
+    (function () {
+      var canvas = document.getElementById('bubble-canvas');
+
+      var bubbles = [
+        { size: 14, left:  7, delay:  0,   dur: 16, swayDur:  5, a: '10px',  b: '-8px',  alpha: 0.22 },
+        { size: 36, left: 16, delay:  3,   dur: 22, swayDur:  7, a: '-16px', b: '12px',  alpha: 0.18 },
+        { size:  9, left: 27, delay:  6,   dur: 13, swayDur:  4, a: '8px',   b: '-6px',  alpha: 0.24 },
+        { size: 52, left: 36, delay:  1,   dur: 28, swayDur:  9, a: '18px',  b: '-14px', alpha: 0.14 },
+        { size: 18, left: 47, delay:  8.5, dur: 17, swayDur:  6, a: '-10px', b: '14px',  alpha: 0.20 },
+        { size: 62, left: 55, delay:  4,   dur: 32, swayDur: 11, a: '-22px', b: '16px',  alpha: 0.12 },
+        { size: 11, left: 64, delay: 10,   dur: 14, swayDur:  4, a: '10px',  b: '-8px',  alpha: 0.23 },
+        { size: 40, left: 73, delay:  0.5, dur: 25, swayDur:  8, a: '14px',  b: '-18px', alpha: 0.16 },
+        { size: 24, left: 83, delay:  7,   dur: 19, swayDur:  6, a: '-12px', b: '10px',  alpha: 0.19 },
+        { size: 16, left: 91, delay: 12,   dur: 15, swayDur:  5, a: '8px',   b: '-10px', alpha: 0.21 },
+        { size: 30, left: 22, delay: 14,   dur: 21, swayDur:  7, a: '-14px', b: '10px',  alpha: 0.17 },
+        { size: 46, left: 44, delay:  9,   dur: 29, swayDur: 10, a: '20px',  b: '-16px', alpha: 0.13 },
+        { size:  8, left: 60, delay: 16,   dur: 12, swayDur:  3.5, a: '-6px', b: '8px',  alpha: 0.25 },
+        { size: 20, left: 78, delay:  5,   dur: 18, swayDur:  6, a: '12px',  b: '-10px', alpha: 0.19 },
+      ];
+
+      bubbles.forEach(function (b) {
+        var el = document.createElement('div');
+        el.className = 'bubble';
+
+        var borderW = b.size < 20 ? 1.5 : b.size < 40 ? 2 : 2.5;
+        var blur    = b.size < 20 ? 0.5 : b.size < 40 ? 1 : 1.5;
+
+        el.style.cssText = [
+          'width:'  + b.size + 'px',
+          'height:' + b.size + 'px',
+          'left:'   + b.left + '%',
+          'border:' + borderW + 'px solid rgba(100,180,220,' + b.alpha + ')',
+          'box-shadow:inset 0 0 ' + (blur * 6) + 'px rgba(160,210,235,' + (b.alpha * 0.5) + '),' +
+                      '0 0 '     + (blur * 4) + 'px rgba(160,210,235,' + (b.alpha * 0.3) + ')',
+          'animation-duration:'  + b.dur     + 's,' + b.swayDur + 's',
+          'animation-delay:'     + b.delay   + 's,' + b.delay   + 's',
+          '--sway-a:' + b.a,
+          '--sway-b:' + b.b,
+        ].join(';');
+
+        canvas.appendChild(el);
+      });
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>泡アニメーション背景</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #ffffff;
+      min-height: 100vh;
+    }
+
+    #bubble-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    /* コンテンツを泡より前面に */
+    body > *:not(#bubble-canvas) {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ---- 浮かび上がる泡 ---- */
+    .bubble-rise {
+      position: absolute;
+      bottom: -80px;
+      border-radius: 50%;
+      background: transparent;
+      animation: bubbleFloatUp ease-in-out infinite,
+                 bubbleSway    ease-in-out infinite;
+      opacity: 0;
+    }
+
+    @keyframes bubbleFloatUp {
+      0%   { bottom: -80px; opacity: 0; }
+      8%   { opacity: 1; }
+      88%  { opacity: 0.5; }
+      100% { bottom: 110%; opacity: 0; }
+    }
+
+    @keyframes bubbleSway {
+      0%   { margin-left: 0; }
+      25%  { margin-left: var(--sway-a); }
+      50%  { margin-left: 0; }
+      75%  { margin-left: var(--sway-b); }
+      100% { margin-left: 0; }
+    }
+
+    /* ---- その場でふよふよする泡 ---- */
+    .bubble-drift {
+      position: absolute;
+      border-radius: 50%;
+      background: transparent;
+      animation: driftX ease-in-out infinite,
+                 driftY ease-in-out infinite;
+    }
+
+    @keyframes driftX {
+      0%   { transform: translateX(0)         translateY(var(--ty, 0px)); }
+      50%  { transform: translateX(var(--dx)) translateY(var(--ty, 0px)); }
+      100% { transform: translateX(0)         translateY(var(--ty, 0px)); }
+    }
+
+    @keyframes driftY {
+      0%   { --ty: 0px; }
+      50%  { --ty: var(--dy); }
+      100% { --ty: 0px; }
+    }
+
+    /* ---- 確認用ダミーコンテンツ（本番では削除） ---- */
+    .demo-content {
+      padding: 80px 40px;
+      text-align: center;
+      font-family: sans-serif;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 泡の描画エリア -->
+  <div id="bubble-canvas"></div>
+
+  <!-- 確認用ダミーコンテンツ（本番では削除） -->
+  <div class="demo-content">
+    <h1>その場でふよふよ漂う泡</h1>
+    <p>コンテンツはここに入ります</p>
+  </div>
+
+  <script>
+    (function () {
+      var canvas = document.getElementById('bubble-canvas');
+
+      /* ============================
+         浮かび上がる泡
+         dur    : 上昇にかかる秒数（大きいほどゆっくり）
+         swayDur: 左右揺れの周期
+         a / b  : 左右の揺れ幅
+         alpha  : 透明度（0〜1）
+      ============================ */
+      var riseData = [
+        { size: 14, left:  7, delay:  0,   dur: 16, swayDur:  5, a: '10px',  b: '-8px',  alpha: 0.22 },
+        { size: 36, left: 16, delay:  3,   dur: 22, swayDur:  7, a: '-16px', b: '12px',  alpha: 0.18 },
+        { size:  9, left: 27, delay:  6,   dur: 13, swayDur:  4, a: '8px',   b: '-6px',  alpha: 0.24 },
+        { size: 52, left: 36, delay:  1,   dur: 28, swayDur:  9, a: '18px',  b: '-14px', alpha: 0.14 },
+        { size: 18, left: 47, delay:  8.5, dur: 17, swayDur:  6, a: '-10px', b: '14px',  alpha: 0.20 },
+        { size: 62, left: 55, delay:  4,   dur: 32, swayDur: 11, a: '-22px', b: '16px',  alpha: 0.12 },
+        { size: 11, left: 64, delay: 10,   dur: 14, swayDur:  4, a: '10px',  b: '-8px',  alpha: 0.23 },
+        { size: 40, left: 73, delay:  0.5, dur: 25, swayDur:  8, a: '14px',  b: '-18px', alpha: 0.16 },
+        { size: 20, left: 83, delay:  7,   dur: 19, swayDur:  6, a: '-12px', b: '10px',  alpha: 0.19 },
+        { size: 30, left: 22, delay: 14,   dur: 21, swayDur:  7, a: '-14px', b: '10px',  alpha: 0.17 },
+      ];
+
+      riseData.forEach(function (b) {
+        var el = document.createElement('div');
+        el.className = 'bubble-rise';
+        var bw = b.size < 20 ? 1.5 : b.size < 40 ? 2 : 2.5;
+        var bl = b.size < 20 ? 0.5 : b.size < 40 ? 1 : 1.5;
+        el.style.cssText = [
+          'width:'  + b.size + 'px',
+          'height:' + b.size + 'px',
+          'left:'   + b.left + '%',
+          'border:' + bw + 'px solid rgba(100,180,220,' + b.alpha + ')',
+          'box-shadow:inset 0 0 ' + (bl*6) + 'px rgba(160,210,235,' + (b.alpha*0.5) + '),' +
+                      '0 0 '     + (bl*4) + 'px rgba(160,210,235,' + (b.alpha*0.3) + ')',
+          'animation-duration:'  + b.dur     + 's,' + b.swayDur + 's',
+          'animation-delay:'     + b.delay   + 's,' + b.delay   + 's',
+          '--sway-a:' + b.a,
+          '--sway-b:' + b.b,
+        ].join(';');
+        canvas.appendChild(el);
+      });
+
+      /* ============================
+         その場でふよふよする泡
+         top    : 画面上の縦位置（%）
+         durX   : 横揺れの周期（秒）
+         durY   : 縦揺れの周期（秒）
+         dx / dy: 揺れ幅
+      ============================ */
+      var driftData = [
+        { size: 20, left: 10, top: 20, durX:  8, durY:  6, delay: 0,   dx: '14px',  dy: '-10px', alpha: 0.18 },
+        { size: 44, left: 25, top: 55, durX: 12, durY:  9, delay: 1.5, dx: '-18px', dy: '12px',  alpha: 0.13 },
+        { size: 16, left: 40, top: 35, durX:  7, durY:  5, delay: 3,   dx: '10px',  dy: '-8px',  alpha: 0.20 },
+        { size: 58, left: 52, top: 70, durX: 14, durY: 11, delay: 0.5, dx: '-22px', dy: '16px',  alpha: 0.10 },
+        { size: 12, left: 65, top: 18, durX:  6, durY:  4, delay: 4,   dx: '8px',   dy: '-6px',  alpha: 0.22 },
+        { size: 34, left: 75, top: 45, durX: 10, durY:  8, delay: 2,   dx: '16px',  dy: '-12px', alpha: 0.15 },
+        { size: 22, left: 88, top: 75, durX:  9, durY:  7, delay: 5,   dx: '-12px', dy: '10px',  alpha: 0.17 },
+        { size: 48, left: 35, top: 15, durX: 13, durY: 10, delay: 2.5, dx: '20px',  dy: '-14px', alpha: 0.11 },
+        { size: 18, left: 60, top: 60, durX:  8, durY:  6, delay: 6,   dx: '-10px', dy: '8px',   alpha: 0.19 },
+        { size: 26, left: 15, top: 80, durX: 11, durY:  8, delay: 1,   dx: '14px',  dy: '-10px', alpha: 0.16 },
+      ];
+
+      driftData.forEach(function (b) {
+        var el = document.createElement('div');
+        el.className = 'bubble-drift';
+        var bw = b.size < 20 ? 1.5 : b.size < 40 ? 2 : 2.5;
+        var bl = b.size < 20 ? 0.5 : b.size < 40 ? 1 : 1.5;
+        el.style.cssText = [
+          'width:'  + b.size + 'px',
+          'height:' + b.size + 'px',
+          'left:'   + b.left + '%',
+          'top:'    + b.top  + '%',
+          'border:' + bw + 'px solid rgba(100,180,220,' + b.alpha + ')',
+          'box-shadow:inset 0 0 ' + (bl*6) + 'px rgba(160,210,235,' + (b.alpha*0.5) + '),' +
+                      '0 0 '     + (bl*4) + 'px rgba(160,210,235,' + (b.alpha*0.3) + ')',
+          'animation-duration:'  + b.durX + 's,' + b.durY + 's',
+          'animation-delay:'     + b.delay + 's,' + b.delay + 's',
+          '--dx:' + b.dx,
+          '--dy:' + b.dy,
+        ].join(';');
+        canvas.appendChild(el);
+      });
+
+    })();
+  </script>
+
+</body>
+</html>
